@@ -1,0 +1,215 @@
+// Inkwell — data model (Phase 1)
+// Provider: PostgreSQL (free tier: Neon or Supabase). See docs/10-setup-guide.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Auth.js (NextAuth) ─────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String? // set for email/password (Credentials) sign-ups
+  plan          Plan      @default(FREE)
+  createdAt     DateTime  @default(now())
+
+  accounts     Account[]
+  sessions     Session[]
+  projects     Project[]
+  characters   Character[]
+  assets       Asset[]
+  generations  Generation[]
+  subscription Subscription?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ───────────────────────── Application ─────────────────────────
+
+model Project {
+  id        String        @id @default(cuid())
+  userId    String
+  title     String        @default("Untitled comic")
+  premise   String        @db.Text // the one-line idea / seed
+  status    ProjectStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages       Page[]
+  characters  Character[]
+  assets      Asset[]
+  generations Generation[]
+
+  @@index([userId])
+}
+
+model Character {
+  id            String   @id @default(cuid())
+  userId        String // owner — characters live in the user's reusable library
+  projectId     String? // optionally created within a project
+  name          String
+  role          String? // Lead / Support / Antagonist …
+  description   String   @db.Text
+  identityToken Json? // ref-image set + LoRA/embedding handle (Phase 2)
+  refImageUrl   String?
+  createdAt     DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  projectId String
+  index     Int
+  layout    Json? // panel layout description
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  panels  Panel[]
+
+  @@unique([projectId, index])
+}
+
+model Panel {
+  id        String   @id @default(cuid())
+  pageId    String
+  index     Int
+  prompt    String?  @db.Text
+  shot      Json? // framing / mood / characters in shot
+  assetId   String?
+  createdAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, index])
+}
+
+model Asset {
+  id        String    @id @default(cuid())
+  userId    String
+  projectId String?
+  kind      AssetKind @default(PANEL)
+  url       String
+  width     Int?
+  height    Int?
+  meta      Json?
+  createdAt DateTime  @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+// One row per AI render — the metering + audit record.
+model Generation {
+  id        String           @id @default(cuid())
+  userId    String
+  projectId String?
+  kind      GenerationKind
+  status    GenerationStatus @default(QUEUED)
+  prompt    String?          @db.Text
+  provider  String? // e.g. "nano-banana", "sdxl", "flux2-pro"
+  assetId   String?
+  error     String?          @db.Text
+  createdAt DateTime         @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  plan             Plan     @default(FREE)
+  status           String   @default("active")
+  stripeCustomerId String?
+  stripeSubId      String?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Plan {
+  FREE
+  CREATOR
+  PRO
+}
+
+enum ProjectStatus {
+  DRAFT
+  GENERATING
+  READY
+}
+
+enum AssetKind {
+  CHARACTER
+  SCENE
+  PANEL
+  PAGE
+}
+
+enum GenerationKind {
+  STORY
+  CHARACTER
+  SCENE
+  PANEL
+  DIALOGUE
+  OTHER
+}
+
+enum GenerationStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
