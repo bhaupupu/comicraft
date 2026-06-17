@@ -114,9 +114,76 @@
   }
 }
 
+@layer components {
+  /* ---- Storyboard sticky note ---- */
+  .sticky-note {
+    position: relative;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    box-shadow: 3px 3px 0 0 var(--ink);
+  }
+  /* Washi-tape strip pinned to a card corner */
+  .tape {
+    position: absolute;
+    height: 26px;
+    width: 88px;
+    background: rgba(255, 210, 63, 0.72);
+    border: 1px solid rgba(24, 20, 16, 0.18);
+    box-shadow: 0 1px 4px rgba(24, 20, 16, 0.18);
+  }
+
+  /* ---- Bookshelf ---- */
+  .shelf-plank {
+    background: linear-gradient(180deg, #c8a06a 0%, #a9824f 55%, #8a663a 100%);
+    border: 2px solid var(--ink);
+    box-shadow: 0 10px 24px -10px rgba(24, 20, 16, 0.55);
+  }
+  .book-spine {
+    background-image: linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      transparent 14%,
+      transparent 86%,
+      rgba(24, 20, 16, 0.28) 100%
+    );
+  }
+
+  /* ---- Reader page sheet ---- */
+  .page-sheet {
+    background: #fffdf7;
+    box-shadow:
+      inset 22px 0 28px -24px rgba(24, 20, 16, 0.45),
+      0 24px 60px -28px rgba(24, 20, 16, 0.5);
+  }
+
+  /* Hand-inked horizontal divider */
+  .ink-divider {
+    height: 6px;
+    background:
+      radial-gradient(circle at 50% -120%, var(--ink) 60%, transparent 61%) repeat-x;
+    background-size: 18px 14px;
+    opacity: 0.5;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* 3D helpers for page-flip / book-open interactions */
+  .perspective {
+    perspective: 1600px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  .drop-ink {
+    filter: drop-shadow(3px 3px 0 var(--ink));
   }
   .text-pretty {
     text-wrap: pretty;

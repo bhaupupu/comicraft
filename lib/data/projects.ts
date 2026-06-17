@@ -15,6 +15,60 @@ export function getProject(id: string, userId: string) {
   return prisma.project.findFirst({ where: { id, userId } });
 }
 
+export type ShelfProject = {
+  id: string;
+  title: string;
+  premise: string;
+  status: string;
+  pages: number;
+  cast: number;
+  updated: string;
+  cover: string | null;
+};
+
+/** Projects for the bookshelf — with a real raster cover when one exists. */
+export async function listShelf(userId: string): Promise<ShelfProject[]> {
+  const projects = await prisma.project.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      _count: { select: { pages: true, characters: true } },
+      pages: {
+        orderBy: { index: "asc" },
+        take: 1,
+        include: { panels: { orderBy: { index: "asc" }, take: 1 } },
+      },
+    },
+  });
+
+  const firstAssetId = (p: (typeof projects)[number]) =>
+    p.pages[0]?.panels[0]?.assetId ?? null;
+  const assetIds = projects
+    .map(firstAssetId)
+    .filter((x): x is string => !!x);
+  const assets = assetIds.length
+    ? await prisma.asset.findMany({ where: { id: { in: assetIds } } })
+    : [];
+  const urlFor = new Map(assets.map((a) => [a.id, a.url]));
+
+  return projects.map((p) => {
+    const aid = firstAssetId(p);
+    const url = aid ? urlFor.get(aid) ?? null : null;
+    const cover =
+      url && !url.startsWith("data:image/svg") && !url.endsWith(".svg") ? url : null;
+    return {
+      id: p.id,
+      title: p.title,
+      premise: p.premise,
+      status: p.status,
+      pages: p._count.pages,
+      cast: p._count.characters,
+      updated: p.updatedAt.toLocaleDateString(),
+      cover,
+    };
+  });
+}
+
 export type EditorPanel = {
   id: string;
   label: string;

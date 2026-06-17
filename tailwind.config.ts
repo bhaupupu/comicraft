@@ -82,6 +82,25 @@ const config: Config = {
         "dash-draw": {
           to: { strokeDashoffset: "0" },
         },
+        drift: {
+          "0%,100%": { transform: "translateY(0) rotate(var(--tw-rotate,0))" },
+          "50%": { transform: "translateY(-14px) rotate(var(--tw-rotate,0))" },
+        },
+        bob: {
+          "0%,100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
+        "ink-rise": {
+          "0%": { transform: "translateY(110%)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        "tape-in": {
+          "0%": { transform: "rotate(-8deg) scale(0.6)", opacity: "0" },
+          "100%": { transform: "rotate(-4deg) scale(1)", opacity: "1" },
+        },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "marker-sweep": "marker-sweep 0.7s ease-out forwards",
@@ -89,6 +108,10 @@ const config: Config = {
         "panel-in": "panel-in 0.5s ease-out forwards",
         float: "float 6s ease-in-out infinite",
         "caret-blink": "caret-blink 1s steps(1) infinite",
+        drift: "drift 7s ease-in-out infinite",
+        "drift-slow": "drift 11s ease-in-out infinite",
+        bob: "bob 3.5s ease-in-out infinite",
+        shimmer: "shimmer 2.2s ease-in-out infinite",
       },
     },
   },

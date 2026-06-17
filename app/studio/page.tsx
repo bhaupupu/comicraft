@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CornerDownLeft, Plus, ArrowRight, Clock } from "lucide-react";
+import { CornerDownLeft, Library } from "lucide-react";
 import { auth } from "@/auth";
-import { listProjects } from "@/lib/data/projects";
+import { listShelf } from "@/lib/data/projects";
 import { createProjectAction } from "@/app/studio/actions";
 import { Button } from "@/components/ui/button";
 import { Halftone } from "@/components/comic/halftone";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { Bookshelf } from "@/components/studio/bookshelf";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Your studio" };
@@ -20,7 +21,7 @@ export default async function StudioDashboard({
   const session = await auth();
   if (!session?.user?.id) redirect("/login?callbackUrl=/studio");
 
-  const projects = await listProjects(session.user.id);
+  const books = await listShelf(session.user.id);
   const name = session.user.name?.split(" ")[0] ?? "there";
 
   return (
@@ -58,7 +59,7 @@ export default async function StudioDashboard({
             </div>
           )}
 
-          {/* new comic prompt */}
+          {/* start a new comic */}
           <form
             action={createProjectAction}
             className="mt-8 flex w-full max-w-2xl items-center gap-2 rounded-full border-2 border-ink bg-white p-1.5 pl-4 shadow-panel"
@@ -72,72 +73,43 @@ export default async function StudioDashboard({
               className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-ink-faint"
             />
             <Button type="submit" variant="primary" className="shrink-0">
-              New comic <CornerDownLeft size={16} />
+              Start a new comic <CornerDownLeft size={16} />
             </Button>
           </form>
           <p className="mt-2 text-sm text-ink-faint">
-            One line is enough — you can refine the story in the editor.
+            One line is enough — you&apos;ll shape the rest in the studio.
           </p>
         </div>
       </section>
 
-      <section className="container-page py-10">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-extrabold">
-            {projects.length > 0 ? "Your comics" : "No comics yet"}
+      <section className="container-page py-12">
+        <div className="mb-7 flex items-center justify-between">
+          <h2 className="inline-flex items-center gap-2 text-xl font-extrabold">
+            <Library size={20} /> {books.length > 0 ? "Your bookshelf" : "Your bookshelf is empty"}
           </h2>
           <span className="font-mono text-sm text-ink-faint">
-            {projects.length} project{projects.length === 1 ? "" : "s"}
+            {books.length} {books.length === 1 ? "comic" : "comics"}
           </span>
         </div>
 
-        {projects.length === 0 ? (
-          <div className="grid place-items-center rounded-panel border-2 border-dashed border-ink/40 bg-white py-16 text-center">
-            <div className="flex max-w-sm flex-col items-center gap-3">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-ink bg-accent">
-                <Plus size={24} />
-              </span>
-              <p className="font-display text-xl font-extrabold">Start your first comic</p>
-              <p className="text-ink-soft">
-                Type an idea above and Comicraft will spin up a project for you.
-              </p>
+        {books.length === 0 ? (
+          <div className="relative">
+            <div className="grid place-items-center rounded-panel border-2 border-dashed border-ink/40 bg-white py-16 text-center">
+              <div className="flex max-w-sm flex-col items-center gap-3">
+                <span className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-ink bg-accent">
+                  <Library size={24} />
+                </span>
+                <p className="font-display text-xl font-extrabold">Shelve your first comic</p>
+                <p className="text-ink-soft">
+                  Type an idea above and it&apos;ll appear here as a book you can open
+                  and keep building.
+                </p>
+              </div>
             </div>
+            <div className="shelf-plank mx-1 mt-[-6px] h-4 rounded-b-md" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p) => (
-              <Link
-                key={p.id}
-                href={`/studio/p/${p.id}`}
-                className="group flex flex-col overflow-hidden rounded-panel border-2 border-ink bg-white shadow-panel-sm transition-all hover:-translate-y-1 hover:shadow-panel"
-              >
-                <div className="relative border-b-2 border-ink bg-paper-deep p-4">
-                  <Halftone className="absolute inset-0 opacity-[0.08]" dot={9} />
-                  <span className="relative rounded-md border-2 border-ink bg-white px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide">
-                    {p.status}
-                  </span>
-                  <p className="relative mt-3 line-clamp-2 font-comic text-sm font-bold text-ink-soft">
-                    “{p.premise}”
-                  </p>
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <h3 className="line-clamp-1 text-lg font-extrabold text-ink">{p.title}</h3>
-                  <div className="mt-2 flex items-center gap-3 text-xs text-ink-faint">
-                    <span>{p._count.pages} pages</span>
-                    <span>{p._count.characters} cast</span>
-                    <span className="ml-auto inline-flex items-center gap-1">
-                      <Clock size={12} />
-                      {p.updatedAt.toLocaleDateString()}
-                    </span>
-                  </div>
-                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-ink">
-                    Open editor
-                    <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <Bookshelf books={books} />
         )}
       </section>
     </div>
